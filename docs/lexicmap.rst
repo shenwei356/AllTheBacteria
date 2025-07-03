@@ -159,7 +159,7 @@ Steps:
    ::
 
        # Tarball file names and their URLs
-       zcat file_list.all.latest.tsv.gz | awk 'NR>1 {print $3"\t"$4}' | uniq > tar2url.tsv
+       zcat file_list.all.latest.tsv.gz | awk -F'\t' 'NR>1 {print $5"\t"$6}' | uniq > tar2url.tsv
 
        # Download. If it's interrupted, just rerun the same command.
        cat tar2url.tsv | rush --eta -j 2 -c -C download.rush 'wget -O {1} {2}'
@@ -236,4 +236,27 @@ Steps:
         61.02 KiB      genomes.chunks.bin
             619 B      info.toml
 
-6. Searching with LexicMap (`tutorial <https://bioinf.shenwei.me/LexicMap/tutorials/search/>`__).
+6. (Optional) Prepare Taxonomy data to limit TaxId in `lexicmap search` since LexicMap v0.7.1.
+
+   ::
+
+        # Download species_calls.tsv.gz file in the directory (Latest_2024-08) of this page:
+        # https://osf.io/h7wzy/files/osfstorage#
+        wget https://osf.io/download/7t9qd/ -O species_calls.tsv.gz
+
+        # Download gtdb-taxdump files of version r214 that was used in
+        # taxonomic classification of AllTheBacteria v2.0 and incremental 202408
+        # from here: https://github.com/shenwei356/gtdb-taxdump/releases/tag/v0.4.0
+        wget https://github.com/shenwei356/gtdb-taxdump/releases/download/v0.4.0/gtdb-taxdump.tar.gz
+
+        tar -zxvf gtdb-taxdump.tar.gz
+        mv gtdb-taxdump/R214 taxdump
+
+        # Prepare A file mapping assembly accession to TaxId
+        # using TaxonKit: https://github.com/shenwei356/taxonkit
+        cat species_calls.tsv.gz | sed 1d | cut -f 1,2 \
+            | taxonkit name2taxid --data-dir taxdump/ -i 2 \
+            | cut -f 1,3 \
+            > taxid.map
+
+7. Searching with LexicMap (`tutorial <https://bioinf.shenwei.me/LexicMap/tutorials/search/>`__).
